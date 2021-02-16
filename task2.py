@@ -1,9 +1,13 @@
 from geopy.geocoders import Nominatim
 import folium
-from math import asin, sqrt, pi, cos
 
 
 def convert_name_to_coordinates(name: str):
+    """
+    Converts given address to location in format (latitude, longitude)
+    >>> convert_name_to_coordinates("Ternopil")
+    (49.5557716, 25.591886)
+    """
     geolocator = Nominatim(timeout=10, user_agent="fuck i know")
     location = geolocator.geocode(name)
     if location is None:
@@ -14,25 +18,23 @@ def convert_name_to_coordinates(name: str):
         return False
 
 
-def haversin(lat1, lon1, lat2, lon2):
-    """
-    r = 6371,00 km
-    """
-    r = 6371
-    lat1, lat2 = lat1*pi/180, lat2*pi/180
-    lon1, lon2 = lon1*pi/180, lon2*pi/180
-    arg = (1-cos(lat2-lat1))/2 + cos(lat1)*cos(lat2)*(1-cos(lon2-lon1))/2
-    d = 2*r*asin(sqrt(arg))
-    return d
-
-
 def convert_coordinates_to_country(coordinates):
+    """
+    Converts given coordinates to address
+    >>> convert_coordinates_to_country("41.24470365017502, 29.089026846954905")
+    'Istanblue Villaları, Rumeli Feneri Mahallesi, Sarıyer, Istanbul, Marmara Region, 34450, Turkey'
+    """
     geolocator = Nominatim(timeout=10, user_agent="fuck i know")
     location = geolocator.reverse(coordinates, language="en")
     return str(location)
 
 
 def parse(films: list, address: str):
+    """
+    Picks films from country mentioned in address
+    >>> parse([("proga" ,"op, Ukraine"), ("matan", "Lviv")], "ip, Ukraine")
+    [('proga', 'op, Ukraine')]
+    """
     temp = []
     country = address.split(",")[-1].strip()
     for film in films:
@@ -42,6 +44,9 @@ def parse(films: list, address: str):
 
 
 def read_data(path: str, date: int):
+    """
+    Reads data from locations.list and returns list of tuples
+    """
     result = []
     with open(path, encoding="utf-8", errors="ignore") as file:
         for _ in range(14):
@@ -65,6 +70,9 @@ def read_data(path: str, date: int):
 
 
 def get_films(coordinates: str):
+    """
+    Asks user for year and parses through list of films
+    """
     user_address = convert_coordinates_to_country(coordinates)
     user_year = input("Please enter the year: ")
     while True:
@@ -74,7 +82,7 @@ def get_films(coordinates: str):
         except ValueError:
             user_year = input("Please enter the year: ")
             continue
-    films_in_year = read_data("half_data", user_year)
+    films_in_year = read_data("locations.list", user_year)
     films_in_year = parse(films_in_year, user_address)
     if len(films_in_year) > 10:
         films_in_year = films_in_year[:10]
@@ -82,6 +90,9 @@ def get_films(coordinates: str):
 
 
 def create_map(films: list, coordinates: tuple):
+    """
+    Creates map using folium
+    """
     map = folium.Map(tiles="Stamen Terrain", location=list(coordinates))
     map.add_child(folium.Marker(location=list(coordinates), popup="Your location", icon=folium.Icon()))
     fg = folium.FeatureGroup(name="First")
@@ -98,6 +109,9 @@ def create_map(films: list, coordinates: tuple):
 
 
 def main():
+    """
+    Main function
+    """
     coordinates = input("Please enter your coordinates: ")
     films = get_films(coordinates)
     coordinates = tuple(map(lambda x: float(x), coordinates.split(',')))

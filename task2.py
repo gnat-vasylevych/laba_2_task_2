@@ -41,23 +41,6 @@ def parse(films: list, address: str):
     return temp
 
 
-def parse_2(films: list, address: str):
-    temp = []
-    location = address.split(',')[-1:-3:-1]
-    for el in location:
-        try:
-            int(el)
-            location = address.split(',')[-1:-2:-1] + address.split(',')[-3:-4:-1]
-        except:
-            continue
-    location.reverse()
-    address = ",".join(location).strip()
-    for film in films:
-        if address in film[1]:
-            temp.append(film)
-    return temp
-
-
 def read_data(path: str, date: int):
     result = []
     with open(path, encoding="utf-8", errors="ignore") as file:
@@ -81,8 +64,7 @@ def read_data(path: str, date: int):
     return result
 
 
-def get_films():
-    coordinates = "49.83826, 24.02324"  # "34.0536909, -118.242766"
+def get_films(coordinates: str):
     user_address = convert_coordinates_to_country(coordinates)
     user_year = input("Please enter the year: ")
     while True:
@@ -95,14 +77,31 @@ def get_films():
     films_in_year = read_data("half_data", user_year)
     films_in_year = parse(films_in_year, user_address)
     if len(films_in_year) > 10:
-        films_in_year = parse_2(films_in_year, user_address)
-    if len(films_in_year) > 10:
         films_in_year = films_in_year[:10]
     return films_in_year
 
 
-def create_map(films: list):
-    pass
+def create_map(films: list, coordinates: tuple):
+    map = folium.Map(tiles="Stamen Terrain", location=list(coordinates))
+    map.add_child(folium.Marker(location=list(coordinates), popup="Your location", icon=folium.Icon()))
+    fg = folium.FeatureGroup(name="First")
+    for film in films:
+        location = convert_name_to_coordinates(film[1])
+        if type(location) != bool:
+            location = list(location)
+        else:
+            continue
+        fg.add_child(folium.Marker(location=location, popup=film[0], icon=folium.Icon()))
+        folium.PolyLine(locations=[list(coordinates), location], color='red').add_to(map)
+    map.add_child(fg)
+    map.save("map.html")
 
-print(main())
 
+def main():
+    coordinates = input("Please enter your coordinates: ")
+    films = get_films(coordinates)
+    coordinates = tuple(map(lambda x: float(x), coordinates.split(',')))
+    create_map(films, coordinates)
+
+
+main()

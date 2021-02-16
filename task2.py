@@ -1,10 +1,13 @@
 from geopy.geocoders import Nominatim
+import folium
 from math import asin, sqrt, pi, cos
 
 
 def convert_name_to_coordinates(name: str):
     geolocator = Nominatim(timeout=10, user_agent="fuck i know")
     location = geolocator.geocode(name)
+    if location is None:
+        name = ",".join(name.split(",")[1:])
     try:
         return location.latitude, location.longitude
     except AttributeError:
@@ -23,8 +26,36 @@ def haversin(lat1, lon1, lat2, lon2):
     return d
 
 
-def parse(line: list, coordinates: tuple):
-    pass
+def convert_coordinates_to_country(coordinates):
+    geolocator = Nominatim(timeout=10, user_agent="fuck i know")
+    location = geolocator.reverse(coordinates, language="en")
+    return str(location)
+
+
+def parse(films: list, address: str):
+    temp = []
+    country = address.split(",")[-1].strip()
+    for film in films:
+        if country in film[1]:
+            temp.append(film)
+    return temp
+
+
+def parse_2(films: list, address: str):
+    temp = []
+    location = address.split(',')[-1:-3:-1]
+    for el in location:
+        try:
+            int(el)
+            location = address.split(',')[-1:-2:-1] + address.split(',')[-3:-4:-1]
+        except:
+            continue
+    location.reverse()
+    address = ",".join(location).strip()
+    for film in films:
+        if address in film[1]:
+            temp.append(film)
+    return temp
 
 
 def read_data(path: str, date: int):
@@ -50,7 +81,9 @@ def read_data(path: str, date: int):
     return result
 
 
-def main():
+def get_films():
+    coordinates = "49.83826, 24.02324"  # "34.0536909, -118.242766"
+    user_address = convert_coordinates_to_country(coordinates)
     user_year = input("Please enter the year: ")
     while True:
         try:
@@ -60,9 +93,16 @@ def main():
             user_year = input("Please enter the year: ")
             continue
     films_in_year = read_data("half_data", user_year)
+    films_in_year = parse(films_in_year, user_address)
+    if len(films_in_year) > 10:
+        films_in_year = parse_2(films_in_year, user_address)
+    if len(films_in_year) > 10:
+        films_in_year = films_in_year[:10]
+    return films_in_year
 
 
+def create_map(films: list):
+    pass
 
-# read_data("half_data", 2006)
-# haversin(49.83826, 24.02324, 34.0536909, -118.242766)
-main()
+print(main())
+
